@@ -37,8 +37,14 @@ func main() {
 	logger.Info("kernel syscall client connected")
 
 	apiHandler := api.NewHandler(syscallClient, logger)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "10082"
+	}
+
 	httpServer := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":" + port,
 		Handler:      apiHandler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
