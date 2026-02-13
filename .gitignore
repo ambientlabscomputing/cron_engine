@@ -18,9 +18,6 @@ go.work
 # Dependency directories
 vendor/
 
-# Go mod/sum files
-go.sum
-
 # IDE
 .idea/
 .vscode/

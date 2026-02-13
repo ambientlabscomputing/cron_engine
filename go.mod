@@ -2,10 +2,8 @@ module github.com/ambientlabscomputing/cron_engine
 
 go 1.24.0
 
-replace github.com/ambientlabscomputing/umc_sdk => ../umc_sdk
-
 require (
-	github.com/ambientlabscomputing/umc_sdk v0.0.0-00010101000000-000000000000
+	github.com/ambientlabscomputing/umc_sdk v0.1.1
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 )
