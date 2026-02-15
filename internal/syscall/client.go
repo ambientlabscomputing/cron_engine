@@ -11,16 +11,24 @@ import (
 )
 
 type Client struct {
-	eventService   pb.EventServiceClient
-	clusterService pb.ClusterServiceClient
-	logger         *slog.Logger
+	eventService    pb.EventServiceClient
+	clusterService  pb.ClusterServiceClient
+	execService     pb.ExecServiceClient
+	identityService pb.IdentityServiceClient
+	secretService   pb.SecretServiceClient
+	providerService pb.ProviderServiceClient
+	logger          *slog.Logger
 }
 
 func NewClient(conn *grpc.ClientConn, logger *slog.Logger) *Client {
 	return &Client{
-		eventService:   pb.NewEventServiceClient(conn),
-		clusterService: pb.NewClusterServiceClient(conn),
-		logger:         logger,
+		eventService:    pb.NewEventServiceClient(conn),
+		clusterService:  pb.NewClusterServiceClient(conn),
+		execService:     pb.NewExecServiceClient(conn),
+		identityService: pb.NewIdentityServiceClient(conn),
+		secretService:   pb.NewSecretServiceClient(conn),
+		providerService: pb.NewProviderServiceClient(conn),
+		logger:          logger,
 	}
 }
 
@@ -93,4 +101,47 @@ func (c *Client) SaveCronState(ctx context.Context, cronID string, state []byte)
 
 	c.logger.Info("cron state saved", "cron_id", cronID)
 	return nil
+}
+
+// RunProcess executes a command via the kernel ExecService
+func (c *Client) RunProcess(ctx context.Context, command string, args []string, env map[string]string, workingDir string, timeoutSeconds uint32) (*pb.RunProcessResponse, error) {
+	req := &pb.RunProcessRequest{
+		Command:        command,
+		Args:           args,
+		Env:            env,
+		WorkingDir:     workingDir,
+		TimeoutSeconds: timeoutSeconds,
+	}
+
+	resp, err := c.execService.RunProcess(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run process: %w", err)
+	}
+
+	c.logger.Info("process executed via kernel", "command", command, "exit_code", resp.ExitCode)
+	return resp, nil
+}
+
+// SignPayload signs a payload using the node's identity key
+func (c *Client) SignPayload(ctx context.Context, payload []byte) ([]byte, string, error) {
+	req := &pb.SignPayloadRequest{Payload: payload}
+
+	resp, err := c.identityService.SignPayload(ctx, req)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to sign payload: %w", err)
+	}
+
+	return resp.Signature, resp.Algorithm, nil
+}
+
+// GetSecret retrieves a secret from the kernel SecretService
+func (c *Client) GetSecret(ctx context.Context, key string) ([]byte, error) {
+	req := &pb.GetSecretRequest{Key: key}
+
+	resp, err := c.secretService.GetSecret(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get secret: %w", err)
+	}
+
+	return resp.Value, nil
 }

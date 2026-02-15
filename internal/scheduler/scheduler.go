@@ -5,16 +5,20 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
+
+	"github.com/robfig/cron/v3"
 )
 
 type Scheduler struct {
 	logger *slog.Logger
+	parser cron.Parser
 	jobs   map[string]chan bool
 }
 
 func NewScheduler(logger *slog.Logger) *Scheduler {
 	return &Scheduler{
 		logger: logger,
+		parser: cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor),
 		jobs:   make(map[string]chan bool),
 	}
 }
@@ -64,9 +68,18 @@ func (s *Scheduler) StopJob(id string) {
 }
 
 func (s *Scheduler) parseExpression(expression string) (time.Time, error) {
-	return time.Now().Add(1 * time.Minute), nil
+	schedule, err := s.parser.Parse(expression)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid cron expression '%s': %w", expression, err)
+	}
+	return schedule.Next(time.Now()), nil
 }
 
 func (s *Scheduler) nextOccurrence(expression string, after time.Time) time.Time {
-	return after.Add(1 * time.Minute)
+	schedule, err := s.parser.Parse(expression)
+	if err != nil {
+		s.logger.Warn("failed to parse cron expression, using 1 minute fallback", "expression", expression, "error", err)
+		return after.Add(1 * time.Minute)
+	}
+	return schedule.Next(after)
 }

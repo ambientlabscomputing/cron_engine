@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/ambientlabscomputing/umc_sdk v0.1.2
+	github.com/robfig/cron/v3 v3.0.1
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 )

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/ambientlabscomputing/cron_engine/internal/syscall"
 	"github.com/ambientlabscomputing/umc_sdk/lifecycle"
 	"github.com/ambientlabscomputing/umc_sdk/logging"
+	"github.com/ambientlabscomputing/umc_sdk/transport"
 	"google.golang.org/grpc"
 )
 
@@ -92,18 +92,7 @@ func dialKernelSyscallServer(timeout time.Duration) (*grpc.ClientConn, error) {
 		socketPath = "/tmp/ua_kernel.sock"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	dialer := net.Dialer{}
-	conn, err := grpc.DialContext(
-		ctx,
-		"unix:"+socketPath,
-		grpc.WithInsecure(),
-		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-			return dialer.DialContext(ctx, "unix", socketPath)
-		}),
-	)
+	conn, err := transport.UDSDialer(socketPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial kernel syscall server at %s: %w", socketPath, err)
 	}
