@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -77,7 +76,7 @@ func (h *Handler) handleCreateCron(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.syscallClient.EmitCronEvent(
-		context.Background(),
+		r.Context(),
 		"cron.scheduled",
 		req.ID,
 		payload,

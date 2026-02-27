@@ -12,6 +12,7 @@ import (
 	"github.com/ambientlabscomputing/cron_engine/internal/syscall"
 	"github.com/ambientlabscomputing/umc_sdk/lifecycle"
 	"github.com/ambientlabscomputing/umc_sdk/logging"
+	"github.com/ambientlabscomputing/umc_sdk/middleware"
 	"github.com/ambientlabscomputing/umc_sdk/transport"
 	"google.golang.org/grpc"
 )
@@ -38,6 +39,9 @@ func main() {
 
 	apiHandler := api.NewHandler(syscallClient, logger)
 
+	// Wrap with trace middleware
+	wrappedHandler := middleware.TraceIDMiddleware(apiHandler)
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "10082"
@@ -45,7 +49,7 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:         ":" + port,
-		Handler:      apiHandler,
+		Handler:      wrappedHandler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
